@@ -1,11 +1,10 @@
 import { CleanlinessScore } from "../models/cleanlinessScore.model.js";
-import { PostOffice } from "../models/post.model.js";
+import { PostOffice } from "../models/postOffice.model.js";
 
 export const cleanlinessScore = async (req, res) => {
   try {
     const {
       postOfficeId,
-      responseTime,
       percentageOrganicWaste,
       swatchComplianceTracker,
       frequency,
@@ -13,7 +12,6 @@ export const cleanlinessScore = async (req, res) => {
     } = req.body;
     if (
       !postOfficeId ||
-      !responseTime ||
       !percentageOrganicWaste ||
       !swatchComplianceTracker ||
       !frequency ||
@@ -24,7 +22,7 @@ export const cleanlinessScore = async (req, res) => {
         message: "All fields are required",
       });
     }
-
+    const currentDateTime = new Date();
     const postOffice = await PostOffice.findById(postOfficeId);
     if (!postOffice) {
       return res.status(404).json({
@@ -37,11 +35,10 @@ export const cleanlinessScore = async (req, res) => {
 
     let cleanlinessScore;
     if (existingScore) {
-      // Update existing score
       cleanlinessScore = await CleanlinessScore.findOneAndUpdate(
         { postOfficeId },
         {
-          responseTime: new Date(responseTime),
+          responseTime: currentDateTime,
           percentageOrganicWaste,
           quantity: {
             frequency,
@@ -52,9 +49,9 @@ export const cleanlinessScore = async (req, res) => {
         { new: true }
       );
 
-      await PostOffice.findByIdAndUpdate(postOfficeId, {
-        cleanlinessScore: swatchComplianceTracker,
-      });
+      // await PostOffice.findByIdAndUpdate(postOfficeId, {
+      //   cleanlinessScore: swatchComplianceTracker,
+      // });
 
       return res.status(200).json({
         success: true,
@@ -64,7 +61,7 @@ export const cleanlinessScore = async (req, res) => {
     } else {
       cleanlinessScore = await CleanlinessScore.create({
         postOfficeId,
-        responseTime: new Date(responseTime),
+        responseTime: currentDateTime,
         percentageOrganicWaste,
         quantity: {
           frequency,

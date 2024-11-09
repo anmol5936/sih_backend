@@ -1,5 +1,5 @@
 import express from "express";
-import { cleanlinessScore } from "../controller/cleanlinessController.js";
+import { cleanlinessScore } from "../controller/cleanlinessScore.controller.js";
 
 const cleanlinessRoute = express.Router();
 

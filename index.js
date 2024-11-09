@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 import mongoose from "mongoose";
 import userRoute from "./routes/user.routes.js";
+import cleanlinessRoute from "./routes/cleanlinessScore.routes.js";
 const app = express();
 const PORT = 3000;
 app.use(express.json());
@@ -28,7 +29,7 @@ app.get("/health", (req, res) => {
 });
 
 app.use("/user", userRoute);
-// app.use("/cleanliness", cleanlinessRoute);
+app.use("/cleanliness", cleanlinessRoute);
 
 app.listen(PORT, () => {
   console.log(`Server is running in http://localhost:${PORT}`);
