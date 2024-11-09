@@ -10,11 +10,13 @@ export const cleanlinessScore = async (req, res) => {
       frequency,
       size,
     } = req.body;
+
+    // Validate required fields
     if (
       !postOfficeId ||
-      !percentageOrganicWaste ||
-      !swatchComplianceTracker ||
-      !frequency ||
+      percentageOrganicWaste == null ||
+      swatchComplianceTracker == null ||
+      frequency == null ||
       !size
     ) {
       return res.status(400).json({
@@ -22,7 +24,8 @@ export const cleanlinessScore = async (req, res) => {
         message: "All fields are required",
       });
     }
-    const currentDateTime = new Date();
+
+    // Check if the post office exists
     const postOffice = await PostOffice.findById(postOfficeId);
     if (!postOffice) {
       return res.status(404).json({
@@ -31,10 +34,29 @@ export const cleanlinessScore = async (req, res) => {
       });
     }
 
+    const currentDateTime = new Date();
+
+    // Calculate the normalized frequency
+    const Fmax = 200; // Assuming 200 as the max frequency for normalization
+    const normalizedFrequency = (1 - Math.min(frequency, Fmax) / Fmax) * 100;
+
+    // Assign a numeric value for size (e.g., small = 1, medium = 2, large = 3)
+    const sizeFactors = { small: 1, medium: 2, large: 3 };
+    const sizeFactor = sizeFactors[size] || 1; // Default to 1 if size is not recognized
+
+    // Calculate cleanliness score based on the provided formula
+    const cleanlinessScoreValue =
+      0.3 * (100 - percentageOrganicWaste) +   // Organic waste percentage weight
+      0.2 * normalizedFrequency +               // Frequency weight
+      0.2 * (100 - sizeFactor * 10) +           // Size weight
+      0.3 * swatchComplianceTracker;            // Swatch compliance weight
+
+    // Check if a score already exists for this post office
     const existingScore = await CleanlinessScore.findOne({ postOfficeId });
 
     let cleanlinessScore;
     if (existingScore) {
+      // Update the existing score document
       cleanlinessScore = await CleanlinessScore.findOneAndUpdate(
         { postOfficeId },
         {
@@ -48,17 +70,8 @@ export const cleanlinessScore = async (req, res) => {
         },
         { new: true }
       );
-
-      // await PostOffice.findByIdAndUpdate(postOfficeId, {
-      //   cleanlinessScore: swatchComplianceTracker,
-      // });
-
-      return res.status(200).json({
-        success: true,
-        message: "Cleanliness score updated successfully",
-        data: cleanlinessScore,
-      });
     } else {
+      // Create a new score document
       cleanlinessScore = await CleanlinessScore.create({
         postOfficeId,
         responseTime: currentDateTime,
@@ -69,17 +82,21 @@ export const cleanlinessScore = async (req, res) => {
         },
         swatchComplianceTracker,
       });
-
-      //   await PostOffice.findByIdAndUpdate(postOfficeId, {
-      //     cleanlinessScore: swatchComplianceTracker,
-      //   });
-
-      return res.status(201).json({
-        success: true,
-        message: "Cleanliness score created successfully",
-        data: cleanlinessScore,
-      });
     }
+
+    // Update the PostOffice with the cleanliness score value
+    await PostOffice.findByIdAndUpdate(postOfficeId, {
+      cleanlinessScore: cleanlinessScoreValue,
+    });
+
+    return res.status(existingScore ? 200 : 201).json({
+      success: true,
+      message: existingScore
+        ? "Cleanliness score updated successfully"
+        : "Cleanliness score created successfully",
+      data: cleanlinessScore,
+      calculatedScore: cleanlinessScoreValue,
+    });
   } catch (error) {
     console.error("Error in cleanlinessScore:", error);
     return res.status(500).json({

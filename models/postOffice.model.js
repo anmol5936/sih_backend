@@ -18,6 +18,7 @@ const postOfficeSchema = new mongoose.Schema({
   cleanlinessScore: {
     type: Number,
     min: 0,
+    max:100,
   },
   photoLinks: {
     type: [String],
