@@ -3,6 +3,7 @@ import express from "express";
 import mongoose from "mongoose";
 import userRoute from "./routes/user.routes.js";
 import cleanlinessRoute from "./routes/cleanlinessScore.routes.js";
+import wasteRoute from "./routes/waste.roue.js";
 const app = express();
 const PORT = 3000;
 app.use(express.json());
@@ -30,6 +31,7 @@ app.get("/health", (req, res) => {
 
 app.use("/user", userRoute);
 app.use("/cleanliness", cleanlinessRoute);
+app.use("/", wasteRoute);
 
 app.listen(PORT, () => {
   console.log(`Server is running in http://localhost:${PORT}`);
